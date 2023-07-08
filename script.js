@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const process = require("process");
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
@@ -47,15 +48,15 @@ const userQuestions = [
 function createProject(userQuestions) {
 	return inquirer
 		.prompt(userQuestions)
-        .then(({ proj_name, gh_link }) => {
-			generateFiles(proj_name, gh_link);
+		.then(({ proj_name, gh_link }) => {
+			return generateFiles(proj_name, gh_link);
 		})
 		.then(() => {
 			console.log(`success! project created 🐣`);
 		})
-        .catch((err) => {
-            throw err
-        });
+		.catch((err) => {
+			throw err;
+		});
 }
 
 function generateFiles(projName, ghLink) {
