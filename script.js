@@ -1,4 +1,6 @@
 const process = require("process");
+const util = require("util");
+const exec = util.promisify(require("child_process").exec);
 const fs = require("fs/promises");
 const inquirer = require("inquirer");
 
@@ -26,15 +28,56 @@ const userQuestions = [
 			}
 		},
 	},
+	{
+		type: "input",
+		name: "gh_link",
+		message: "please paste the github url here",
+		validate: (input) => {
+			if (
+				/^https?:\/\/github.com\/[a-zA-Z0-9-_]+\/[a-zA-Z0-9-_]+$/.test(input)
+			) {
+				return true;
+			} else {
+				return "invalid link pasted";
+			}
+		},
+	},
 ];
 
-function createProject() {
-	inquirer.prompt(userQuestions).then(({ proj_name }) => {});
+function createProject(userQuestions) {
+	return inquirer
+		.prompt(userQuestions)
+        .then(({ proj_name, gh_link }) => {
+			generateFiles(proj_name, gh_link);
+		})
+		.then(() => {
+			console.log(`success! project created 🐣`);
+		})
+        .catch((err) => {
+            throw err
+        });
 }
 
-function generateFiles(projectName) {
+function generateFiles(projName, ghLink) {
 	const currDir = process.cwd();
 	return fs
-		.mkdir(`${currDir}/${projectName}`, { recursive: false })
-		.then(() => {});
+		.mkdir(`${currDir}/${projName}`, { recursive: false })
+		.then(() => {
+			return fs.writeFile(`${currDir}/${projName}/README.md`, `# ${projName}`);
+		})
+		.then(() => {
+			return fs.writeFile(`${currDir}/${projName}/.gitignore`, `node_modules`);
+		})
+		.then(() => {
+			return createGitRepo(projName, ghLink);
+		});
 }
+
+function createGitRepo(projName, ghLink) {
+	// change command depending on selected proj type
+	return exec(
+		`cd ${projName} && git init && npm init -y && git add . && git commit -m "first commit" && git branch -M main && git remote add origin ${ghLink}.git && git push -u origin main`
+	);
+}
+
+createProject(userQuestions);
